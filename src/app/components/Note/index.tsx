@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import "./index.css";
 import { Note } from "@/app/domain/models/Note";
 import { findNotes, setupPowerSync } from "@/app/service/powersync";
+import ProfileClient from "../Profile";
 
 
 export default function NoteSync() {
@@ -35,8 +36,11 @@ export default function NoteSync() {
     };
 
     return (
-        <div>
-            <div className="customer-list">
+        <div className="customer-list">
+            <div>
+                <ProfileClient />
+            </div>
+            <div>
                 {data && data.length > 0 ? (
                     <ul>
                         {data.map((item) => (
