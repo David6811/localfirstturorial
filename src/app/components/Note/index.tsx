@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./index.css";
 import { Note } from "@/app/domain/models/Note";
-import { findNotes, setupPowerSync } from "@/app/service/powersync";
+import { findNotes, setupPowerSync, updateNote, watchLists } from "@/app/service/powersync";
 import ProfileClient from "../Profile";
 
 
@@ -11,7 +11,13 @@ export default function NoteSync() {
 
     useEffect(() => {
         const initPowerSync = async () => {
-            await setupPowerSync();
+            const response = await fetch('/api/auth/token'); // Adjust the path if needed
+            if (!response.ok) {
+                throw new Error(`Failed to fetch access token: ${response.statusText}`);
+            }
+            const data = await response.json();
+            const accessToken = data.foo;
+            await setupPowerSync(accessToken);
 
             const notes = await findNotes();
             console.log("Notes:", notes);
@@ -19,6 +25,13 @@ export default function NoteSync() {
         };
 
         initPowerSync();
+
+        watchLists((update) => {
+            console.log("Received update:", update);
+            setData(update);
+        }).catch((err) => {
+            console.error("Error watching lists:", err);
+        });
 
     }, []);
 
@@ -33,6 +46,23 @@ export default function NoteSync() {
             }
             return prevData;
         });
+    };
+
+    const handleUpdate = () => {
+        if (data) {
+            console.log("Updating notes:", data);
+            data.forEach(({ id, content }) => {
+                if (id && content) {
+                    updateNote(content, id).catch((err) =>
+                        console.error(`Error updating note for user ${id}:`, err)
+                    );
+                } else {
+                    console.warn(`Missing id or note for update:`, { id, note: content });
+                }
+            });
+        } else {
+            console.warn("No data to update.");
+        }
     };
 
     return (
@@ -64,6 +94,9 @@ export default function NoteSync() {
                 ) : (
                     <span>No data available</span>
                 )}
+                <button onClick={handleUpdate} className="update-button">
+                    Update Notes
+                </button>
             </div>
 
         </div>
